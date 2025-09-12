@@ -1,0 +1,53 @@
+name: Deploy to MSBNPE Site on Master Branch Push
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mark Git Directory as Safe
+        run: |
+          git config --global --add safe.directory "${{ github.workspace }}"
+
+      - name: Pull Latest Changes
+        run: git pull origin master
+
+      - name: Build Docker Image
+        run: |
+          docker build -t msbnpe:latest .
+
+      - name: Cleanup Old Docker Container
+        run: |
+          docker stop msbnpe-app 2>/dev/null || true
+          docker rm msbnpe-app 2>/dev/null || true
+
+      - name: Run New Docker Container
+        run: |
+          docker run -d \
+            --name msbnpe-app \
+            -p 8086:80 \
+            -v /home/ubuntu/efs/msbnpedemo:/www/public/data/ \
+            msbnpe:latest
+
+      - name: Confirm Deployment
+        run: echo " MSBNPE Site Docker deployment completed successfully ."
+
+      - name: Cleanup Previous Docker Images
+        run: |
+          echo "Cleaning up unused Docker images.."
+          docker image prune -f
