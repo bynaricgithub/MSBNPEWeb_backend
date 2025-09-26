@@ -20,6 +20,7 @@ class TableContent extends Model
         'dept',
         'inst',
         'imageUrl',
+        'mainUrl',
         'description',
         'downloads',
         'link',
